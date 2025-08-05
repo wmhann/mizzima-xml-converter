@@ -52,12 +52,21 @@ Your second story's content goes here.
 </html>
 '''
 
+import re
+import html
+
 def generate_full_xml(rawtext):
     """
-    Parses the raw text and generates a properly formatted XML string with <p> tags.
+    Parses the raw text with multiple stories and generates a properly formatted XML string.
     """
-    pattern = re.compile(
-        r"### (.+?)\n"
+    # Use re.split to break the raw text into individual stories
+    stories_text = re.split(r'\n###\s', rawtext.strip())
+    
+    articles_xml = []
+
+    # Regex to parse each individual story's metadata and content
+    story_pattern = re.compile(
+        r"(.+?)\n"
         r"## Post Date: (.+?)\n"
         r"## Category: (.+?)\n"
         r"## Author: (.+?)\n"
@@ -65,39 +74,46 @@ def generate_full_xml(rawtext):
         r"(.+)",
         re.DOTALL
     )
-    
-    match = re.search(pattern, rawtext)
-    
-    if not match:
-        return "Invalid input format."
 
-    # Correctly extract and clean data
-    headline_raw, postdate, category, author, source, content = match.groups()
+    for i, story_text in enumerate(stories_text):
+        if not story_text.strip():
+            continue
 
-    # The content text might have a mix of \n and \r\n line endings. We normalize it to \n.
-    normalized_content = content.replace('\r\n', '\n')
-    
-    # Split content by double newlines to get separate paragraphs
-    paragraphs = [p.strip() for p in normalized_content.split('\n\n') if p.strip()]
+        story_id = i + 1
 
-    # Format the paragraphs with <p> tags
-    html_body = ""
-    for paragraph in paragraphs:
-        # Replace single newlines within a paragraph with a space to keep it as one block of text
-        clean_paragraph = paragraph.replace('\n', ' ')
-        html_body += f"<p>{html.escape(clean_paragraph)}</p>\n"
+        match = re.search(story_pattern, story_text.strip())
 
-    # Assemble the final XML output
-    full_xml_output = (
-        f'<storyid>1</storyid>\n'
-        f'<postdate>{html.escape(postdate)}</postdate>\n'
-        f'<headline>{html.escape(headline_raw)}</headline>\n'
-        f'<source>{html.escape(source)}</source>\n'
-        f'<category>{html.escape(category)}</category>\n'
-        f'<author>{html.escape(author)}</author>\n'
-        f'<CONTENT><![CDATA[\n{html_body}]]></CONTENT>'
-    )
-    
+        if not match:
+            # If the regex doesn't match, something is wrong with the format of that story.
+            # We can log this and skip the story to prevent the app from crashing.
+            print(f"Skipping story {story_id} due to invalid format.")
+            continue
+
+        # Correctly extract data using the groups from the regex match
+        headline_raw, postdate, category, author, source, content = match.groups()
+
+        # Sanitize and format the content
+        normalized_content = content.replace('\r\n', '\n')
+        paragraphs = [p.strip() for p in normalized_content.split('\n\n') if p.strip()]
+        
+        html_body = ""
+        for paragraph in paragraphs:
+            clean_paragraph = paragraph.replace('\n', ' ')
+            html_body += f"<p>{html.escape(clean_paragraph)}</p>\n"
+            
+        # Assemble the XML for a single article
+        single_article_xml = (
+            f"<storyid>{story_id}</storyid>\n"
+            f"<postdate>{html.escape(postdate)}</postdate>\n"
+            f"<headline>{html.escape(headline_raw.strip())}</headline>\n"
+            f"<source>{html.escape(source)}</source>\n"
+            f"<category>{html.escape(category)}</category>\n"
+            f"<author>{html.escape(author)}</author>\n"
+            f"<CONTENT><![CDATA[\n{html_body}]]></CONTENT>"
+        )
+        articles_xml.append(single_article_xml)
+
+    full_xml_output = "<article>\n" + "\n\n".join(articles_xml) + "\n</article>"
     return full_xml_output
 
 @app.route('/', methods=['GET', 'POST'])
