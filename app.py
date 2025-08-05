@@ -52,60 +52,61 @@ Your second story's content goes here.
 </html>
 '''
 
-import re
-import html
-
 def generate_full_xml(rawtext):
     """
-    Parses the raw text with multiple stories and generates a properly formatted XML string.
+    Parses multiple stories from raw text and generates a single XML file.
     """
-    # Use re.split to break the raw text into individual stories
-    stories_text = re.split(r'\n###\s', rawtext.strip())
-    
     articles_xml = []
-
-    # Regex to parse each individual story's metadata and content
+    
+    # Normalize line endings to be consistent (e.g., from \r\n to \n)
+    normalized_text = rawtext.replace('\r\n', '\n')
+    
+    # Split the text by '###' to get individual stories
+    stories = re.split(r'\n###\s', normalized_text)
+    
+    # Pattern to find metadata and content within each story
     story_pattern = re.compile(
-        r"(.+?)\n"
         r"## Post Date: (.+?)\n"
         r"## Category: (.+?)\n"
         r"## Author: (.+?)\n"
         r"## Source: (.+?)\n\n"
-        r"(.+)",
+        r"(.+)", 
         re.DOTALL
     )
 
-    for i, story_text in enumerate(stories_text):
+    for i, story_text in enumerate(stories):
         if not story_text.strip():
-            continue
+            continue  # Skip any empty parts from the split
 
-        story_id = i + 1
+        # The first line is the headline
+        headline_and_rest = story_text.split('\n', 1)
+        
+        if len(headline_and_rest) < 2:
+            continue # Skip if no content after headline
 
-        match = re.search(story_pattern, story_text.strip())
+        headline = headline_and_rest[0].strip()
+        rest_of_story = headline_and_rest[1].strip()
+
+        match = re.search(story_pattern, rest_of_story)
 
         if not match:
-            # If the regex doesn't match, something is wrong with the format of that story.
-            # We can log this and skip the story to prevent the app from crashing.
-            print(f"Skipping story {story_id} due to invalid format.")
+            print(f"Skipping story {i+1} due to invalid format.")
             continue
 
-        # Correctly extract data using the groups from the regex match
-        headline_raw, postdate, category, author, source, content = match.groups()
+        # Extract data from the matched groups
+        postdate, category, author, source, content = match.groups()
 
-        # Sanitize and format the content
-        normalized_content = content.replace('\r\n', '\n')
-        paragraphs = [p.strip() for p in normalized_content.split('\n\n') if p.strip()]
-        
+        # Split content into paragraphs and wrap with <p> tags
+        paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
         html_body = ""
-        for paragraph in paragraphs:
-            clean_paragraph = paragraph.replace('\n', ' ')
-            html_body += f"<p>{html.escape(clean_paragraph)}</p>\n"
-            
-        # Assemble the XML for a single article
+        for p in paragraphs:
+            html_body += f"<p>{html.escape(p.replace('\n', ' '))}</p>\n"
+
+        # Build the XML for this single story
         single_article_xml = (
-            f"<storyid>{story_id}</storyid>\n"
+            f"<storyid>{i + 1}</storyid>\n"
             f"<postdate>{html.escape(postdate)}</postdate>\n"
-            f"<headline>{html.escape(headline_raw.strip())}</headline>\n"
+            f"<headline>{html.escape(headline)}</headline>\n"
             f"<source>{html.escape(source)}</source>\n"
             f"<category>{html.escape(category)}</category>\n"
             f"<author>{html.escape(author)}</author>\n"
@@ -113,7 +114,7 @@ def generate_full_xml(rawtext):
         )
         articles_xml.append(single_article_xml)
 
-    full_xml_output = "<article>\n" + "\n\n".join(articles_xml) + "\n</article>"
+    full_xml_output = "<article>\n" + "\n".join(articles_xml) + "\n</article>"
     return full_xml_output
 
 @app.route('/', methods=['GET', 'POST'])
