@@ -15,15 +15,27 @@ HTML_FORM = '''
         textarea { width: 100%; padding: 10px; margin: 5px 0 15px; height: 400px; }
         input[type=submit] { width: auto; background: green; color: white; border: none; padding: 12px 20px; cursor: pointer; }
         label { font-weight: bold; }
-        .instructions { background-color: #f0f0f0; padding: 15px; border-left: 5px solid #007bff; margin-bottom: 20px; }
+        .instructions-toggle { margin-bottom: 20px; }
+        #instructions-content { background-color: #f0f0f0; padding: 15px; border-left: 5px solid #007bff; margin-bottom: 20px; }
         pre { background-color: #e9ecef; padding: 10px; white-space: pre-wrap; word-wrap: break-word; }
     </style>
 </head>
 <body>
     <h2>Mizzima XML Converter - Multiple Articles</h2>
-    <div class="instructions">
-        <p><strong>အသုံးပြုပုံ:</strong></p>
-        <p>အောက်ပါပုံစံအတိုင်း article အများကြီးကို တစ်ပြိုင်နက်တည်း ထည့်သွင်းနိုင်ပါသည်။</p>
+    
+    <div class="instructions-toggle">
+        <button class="btn btn-secondary" onclick="toggleInstructions()">အသုံးပြုပုံ</button>
+    </div>
+
+    <div id="instructions-content" style="display:none;">
+        <h5 class="mt-3">သတိပြုရန်အချက်များ</h5>
+        <ul>
+            <li>Story အသစ်တစ်ခု စတင်ရန် <code>###</code> ဖြင့် Headline ကို စတင်ပါ။</li>
+            <li>Metadata (<code>Post Date</code>, <code>Category</code>, <code>Author</code>, <code>Source</code>) တို့ကို <code>##</code> ဖြင့် စတင်ပါ။</li>
+            <li>Metadata နှင့် Content ကြားတွင် လိုင်းအလွတ် (Enter နှစ်ချက်) တစ်ကြောင်း ခြားပါ။</li>
+            <li>Content အတွင်း စာပိုဒ်ခွဲရန် လိုင်းအလွတ် (Enter နှစ်ချက်) တစ်ကြောင်း ခြားပါ။</li>
+            <li><code>###</code> သို့မဟုတ် <code>##</code> ကို စာသားထဲတွင် အလွဲသုံးစားမပြုလုပ်ပါနှင့်။</li>
+        </ul>
         <pre>
 ### Headline of First Story
 ## Post Date: DD/MM/YYYY
@@ -41,16 +53,39 @@ Your first story's content goes here. It can have multiple paragraphs.
 
 Your second story's content goes here.
         </pre>
-        <p><strong>Note:</strong> `###` သည် story အသစ်တစ်ခုကို စတင်ခြင်းဖြစ်ပြီး၊ `##` သည် metadata ကို သတ်မှတ်ခြင်း ဖြစ်သည်။</p>
     </div>
+
     <form method="post">
         <label>Raw Text:</label>
         <textarea name="rawtext" placeholder="Paste all articles here..." required></textarea>
         <input type="submit" value="Convert and Download XML File">
     </form>
+
+    <script>
+        function toggleInstructions() {
+            var content = document.getElementById("instructions-content");
+            if (content.style.display === "none") {
+                content.style.display = "block";
+            } else {
+                content.style.display = "none";
+            }
+        }
+    </script>
+
 </body>
 </html>
 '''
+
+# This helper function must be defined outside of the main function
+def replace_smart_characters(text):
+    text = text.replace('—', '&mdash;')  # Em dash
+    text = text.replace('–', '&ndash;')  # En dash
+    text = text.replace('…', '&hellip;') # Ellipsis
+    text = text.replace('’', '&rsquo;')  # Smart single quote
+    text = text.replace('‘', '&lsquo;')  # Smart single quote
+    text = text.replace('”', '&rdquo;')  # Smart double quote
+    text = text.replace('“', '&ldquo;')  # Smart double quote
+    return text
 
 def generate_full_xml(rawtext):
     """
@@ -84,7 +119,7 @@ def generate_full_xml(rawtext):
         if len(headline_and_rest) < 2:
             continue # Skip if no content after headline
 
-       headline = headline_and_rest[0].strip().replace('###', '').strip()
+        headline = headline_and_rest[0].strip()
         rest_of_story = headline_and_rest[1].strip()
 
         match = re.search(story_pattern, rest_of_story)
@@ -99,8 +134,11 @@ def generate_full_xml(rawtext):
         # Split content into paragraphs and wrap with <p> tags
         paragraphs = [p.strip() for p in content.split('\n\n') if p.strip()]
         html_body = ""
+
         for p in paragraphs:
-            html_body += f"<p>{html.escape(p.replace('\n', ' '))}</p>\n"
+            p_cleaned = p.replace('\n', ' ')
+            p_final = replace_smart_characters(p_cleaned)
+            html_body += f"<p>{html.escape(p_final)}</p>\n"
 
         # Build the XML for this single story
         single_article_xml = (
@@ -114,7 +152,7 @@ def generate_full_xml(rawtext):
         )
         articles_xml.append(single_article_xml)
 
-    full_xml_output = "<article>\n" + "\n".join(articles_xml) + "\n</article>"
+    full_xml_output = "<article>\n" + "\n\n".join(articles_xml) + "\n</article>"
     return full_xml_output
 
 @app.route('/', methods=['GET', 'POST'])
