@@ -119,7 +119,7 @@ def generate_full_xml(rawtext):
         if len(headline_and_rest) < 2:
             continue # Skip if no content after headline
 
-        headline = headline_and_rest[0].strip()
+        headline = headline_and_rest[0].replace('###', '').strip()
         rest_of_story = headline_and_rest[1].strip()
 
         match = re.search(story_pattern, rest_of_story)
