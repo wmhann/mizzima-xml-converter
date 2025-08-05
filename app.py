@@ -63,9 +63,29 @@ def generate_xml(data):
     raw = html.escape(data['rawtext'], quote=False)
     raw = raw.replace("“", "&ldquo;").replace("”", "&rdquo;").replace("‘", "&lsquo;").replace("’", "&rsquo;")
     html_body = "<p>" + raw.replace("\n", "<br />") + "</p>"
-    return f"""<article>
 
-<storyid>{data['storyid']}</storyid>
-<postdate>{data['postdate']}</postdate>
-<headline>{data['headline']}</h
+    xml_output = (
+        "<article>\n\n"
+        f"<storyid>{data['storyid']}</storyid>\n"
+        f"<postdate>{data['postdate']}</postdate>\n"
+        f"<headline>{data['headline']}</headline>\n"
+        f"<source>{data['source']}</source>\n"
+        f"<category>{data['category']}</category>\n"
+        f"<author>{data['author']}</author>\n"
+        "<CONTENT><![CDATA[\n"
+        f"{html_body}\n"
+        "]]>\n</CONTENT>\n\n</article>\n"
+    )
 
+    return xml_output
+
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    if request.method == 'POST':
+        xml = generate_xml(request.form)
+        return send_file(io.BytesIO(xml.encode('utf-8')), mimetype='text/xml',
+                         as_attachment=True, download_name='article.xml')
+    return render_template_string(HTML_FORM)
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000, host='0.0.0.0')
