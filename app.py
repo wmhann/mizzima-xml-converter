@@ -59,7 +59,8 @@ def generate_full_xml(rawtext):
     for i, story_text in enumerate(stories_text):
         story_id = i + 1
 
-        match = re.search(r'^(.*?)\n##\sPost Date:\s(.*?)\n##\sCategory:\s(.*?)\n##\sAuthor:\s(.*?)\n##\sSource:\s(.*?)\n\n(.*)', story_text, re.DOTALL)
+        # Updated regex to correctly parse your input format
+        match = re.search(r'^(.*?)\n##\sPost Date:\s(.*?)\n##\sCategory:\s(.*?)\n##\sAuthor:\s(.*?)\n##\sSource:\s(.*?)\n(.*)', story_text, re.DOTALL)
 
         if not match:
             print(f"Skipping story {story_id} due to invalid format.")
