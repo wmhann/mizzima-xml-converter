@@ -89,3 +89,8 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000, host='0.0.0.0')
+    # if __name__ == '__main__':
+#     app.run(debug=True, port=5000, host='0.0.0.0')
+
+# This part should be commented out or removed in production
+# because gunicorn will handle starting the server.
