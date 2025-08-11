@@ -34,13 +34,13 @@ HTML_FORM = '''
             <li>Metadata (<code>Post Date</code>, <code>Category</code>, <code>Author</code>, <code>Source</code>) တို့ကို <code>##</code> ဖြင့် စတင်ပါ။</li>
             <li>Metadata နှင့် Content ကြားတွင် လိုင်းအလွတ် (Enter နှစ်ချက်) တစ်ကြောင်း ခြားပါ။</li>
             <li>Content အတွင်း စာပိုဒ်ခွဲရန် လိုင်းအလွတ် (Enter နှစ်ချက်) တစ်ကြောင်း ခြားပါ။</li>
-            <li><code>###</code> သို့မဟုတ် <code>##</code> ကို စာသားထဲတွင် အလွဲသုံးစားမပြုလုပ်ပါနှင့်။</li>
+            <li><code>###</code> သို့မဟုတ် <code>##</code> ကို သတင်းစာသားထဲတွင် ထည့်သုံးခြင်းမပြုလုပ်ပါနှင့်။</li>
         </ul>
         <pre>
 ### Headline of First Story
 ## Post Date: DD/MM/YYYY
 ## Category: Editorial
-## Author: Mizzima Weekly
+## Author: Mizzima 
 ## Source: Mizzima Weekly
 
 Your first story's content goes here. It can have multiple paragraphs.
